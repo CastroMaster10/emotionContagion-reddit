@@ -1,0 +1,5 @@
+
+extracted_subreddits:
+  type: kedro_datasets.json.JSONDataset
+  filepath: 'data/01_raw/extracted_subreddits.json'
+  versioned: true

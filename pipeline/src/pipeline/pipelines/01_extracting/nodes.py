@@ -1,16 +1,46 @@
 import praw
 import os
 import dotenv
-import pandas as pd
+import json
 
 dotenv.load_dotenv()
 
 
-def extract_comments(subreddit_name: str, limit_requests: int) -> pd.DataFrame:
 
-    pass
+def extract_comments_replies(submission: object) -> json:
 
-def extract_subreddits(limit_requests: int) -> list:
+    submission.comments.replace_more(limit=None)
+    comment_tree = {}
+    for comment in submission.comments:
+        comment_tree[comment.id] = {
+            "body": comment.body,
+            "replies": [reply.body for reply in comment.replies]
+        }
+    return comment_tree
+
+
+
+def extract_submissions(subreddit: object) -> dict:
+
+    submissions = {}
+    for submission in subreddit.hot(limit=10):
+        submissions[submission.id] =  {
+            "author": submission.author_flair_text,
+            "url": submission.url,
+            "num_comments": submission.num_comments,
+            "title": submission.title,
+            "comments":  extract_comments_replies(submission)
+        }
+
+
+
+
+    return submissions
+
+
+
+
+def extract_subreddits(limit_requests: int=10) -> json:
 
     """
     Extracts data from Reddit using PRAW and returns it as a DataFrame.
@@ -26,17 +56,18 @@ def extract_subreddits(limit_requests: int) -> list:
     username=os.getenv("MY_USERNAME"),
     )
 
-    df = pd.DataFrame(columns=["title", "score", "id", "url", "comments"])
 
 
     subreddits = reddit.subreddits.popular(limit=limit_requests)
+    payload = {}
 
-    names = []
-    for submission in subreddits:
-        names.append(submission.display_name)
+    for subreddit in subreddits:
+        payload[subreddit.id] = {
+            "id":subreddit.id,
+            "subreddit_name": subreddit.display_name,
+            "description": subreddit.public_description,
+            "posts":  extract_submissions(subreddit)
+        }
 
-    return names
-
-
-print(extract_subreddits(100))  # Example usage, replace with actual subreddit name
+    return payload
 
