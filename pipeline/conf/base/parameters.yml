@@ -1,2 +1,2 @@
 extracted_subreddits:
-  limit_requests: 1
+  limit_requests: 10

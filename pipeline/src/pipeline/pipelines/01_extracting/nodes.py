@@ -2,6 +2,8 @@ import praw
 import os
 import dotenv
 import json
+import time
+
 
 dotenv.load_dotenv()
 
@@ -9,7 +11,7 @@ dotenv.load_dotenv()
 
 def extract_comments_replies(submission: object) -> json:
 
-    submission.comments.replace_more(limit=None)
+    submission.comments.replace_more(limit=100)
     comment_tree = {}
     for comment in submission.comments:
         comment_tree[comment.id] = {
@@ -20,10 +22,10 @@ def extract_comments_replies(submission: object) -> json:
 
 
 
-def extract_submissions(subreddit: object) -> dict:
+def extract_submissions(subreddit: object,limit_requests: int) -> dict:
 
     submissions = {}
-    for submission in subreddit.hot(limit=10):
+    for submission in subreddit.hot(limit=limit_requests):
         submissions[submission.id] =  {
             "author": submission.author_flair_text,
             "url": submission.url,
@@ -54,20 +56,24 @@ def extract_subreddits(limit_requests: int=10) -> json:
     password=os.getenv("MY_PASSWORD"),
     user_agent=os.getenv("USER_AGENT"),
     username=os.getenv("MY_USERNAME"),
+    ratelimit_seconds = 60
     )
 
 
 
-    subreddits = reddit.subreddits.popular(limit=limit_requests)
-    payload = {}
+    subreddit = reddit.subreddit("politics")
 
-    for subreddit in subreddits:
-        payload[subreddit.id] = {
-            "id":subreddit.id,
-            "subreddit_name": subreddit.display_name,
-            "description": subreddit.public_description,
-            "posts":  extract_submissions(subreddit)
-        }
+
+    payload = {
+        "id":subreddit.id,
+        "subreddit_name": subreddit.display_name,
+        "description": subreddit.public_description,
+        "posts":  extract_submissions(subreddit,limit_requests)
+    }
+
+
+
+
 
     return payload
 
